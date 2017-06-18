@@ -62,10 +62,10 @@ class SimpleMapStoreTest extends FlatSpec with BeforeAndAfterEach with Matchers 
     sms.size should be (2)
     val deleted1 = sms.del(key1)
     sms.size should be (1)
-    deleted1 should be (true)
+    deleted1.listing.id should be (Some(key1))
     val key3 = sms.add(listing)
     val deleted3 = sms.del(key3)
-    deleted3 should be (true)
+    deleted3.listing.id should be (Some(key3))
   }
 
   it should "add" in {
@@ -86,4 +86,3 @@ class SimpleMapStoreTest extends FlatSpec with BeforeAndAfterEach with Matchers 
   }
 
 }
-

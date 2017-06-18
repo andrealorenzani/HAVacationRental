@@ -37,8 +37,8 @@ sealed case class Size(size: Int)
 abstract class DataStore {
   def get(id: String): Option[ListingWrapper]
   def add(newListing: ListingWrapper): String
-  def update(newListing: ListingWrapper): Boolean
-  def del(listingId: String): Boolean
+  def update(newListing: ListingWrapper): Unit
+  def del(listingId: String): ListingWrapper
 
   // Not required but... nice to have for testing (even if delAll is dangerous, should be removed)
   def delAll: List[ListingWrapper]

@@ -1,8 +1,8 @@
 package name.lorenzani.andrea.homeaway.json
 
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
-import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 
 // Copied from https://coderwall.com/p/o--apg/easy-json-un-marshalling-in-scala-with-jackson
 
