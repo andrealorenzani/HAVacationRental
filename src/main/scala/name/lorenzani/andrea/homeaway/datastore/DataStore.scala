@@ -47,6 +47,6 @@ abstract class DataStore {
 }
 
 object DataStore {
-  private val ds = ???
+  private val ds = new SimpleMapStore
   def getDataStore: DataStore = ds
 }
