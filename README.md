@@ -9,7 +9,17 @@ Use sbt to compile and run the server
 or to run tests
 **sbt test**
 
-I also write a bash script that run the test and perform some basic curl requests. It needs *curl* to send http requests and *jq* to parse/extract data from the response. It is not a fully exhaustive integration test, but it shows how to interact with the REST API
+I also wrote a bash script that run the server and perform some basic curl requests. It needs *curl* to send http requests and *jq* to parse/extract data from the response. It is not a fully exhaustive integration test, but it shows how to interact with the REST API. It is a prototype (for example, it has a function for starting the server but it is not invoked), I used it for test, just look at it if you have doubts.
+
+Example of  curls that work with the server:
+curl --request GET http://localhost:8080/size
+curl --request GET http://localhost:8080/listings
+curl --request GET http://localhost:8080/listing/<id>
+curl --request DELETE http://localhost:8080/del/id
+curl --request DELETE http://localhost:8080/delall
+curl --request POST --data '<valid new listing json withoud id>' http://localhost:8080/new
+curl --request PUT --data '<valid json with a valid id>' http://localhost:8080/update
+
 
 ----------
 
