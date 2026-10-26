@@ -1,77 +1,73 @@
-**HomeAway test**
-===================
+# HAVacationRental
 
-Usage
------
+A small in-memory REST service that manages vacation-rental listings. It was written as a coding exercise for HomeAway and has since been upgraded to current libraries.
 
-Use sbt to compile and run the server
-**sbt run** 
-or to run tests
-**sbt test**
+- Scala 2.13 (Finagle is not published for Scala 3)
+- [Finagle](https://twitter.github.io/finagle/) 24.2 as HTTP server
+- Jackson 2.22 (+ `jackson-module-scala`) for JSON
+- ScalaTest 3.2 for tests
+- sbt 1.12, JDK 17 or newer (developed and tested on JDK 21)
 
-I also wrote a bash script that run the server and perform some basic curl requests. It needs *curl* to send http requests and *jq* to parse/extract data from the response. It is not a fully exhaustive integration test, but it shows how to interact with the REST API. It is a prototype (for example, it has a function for starting the server but it is not invoked), I used it for test, just look at it if you have doubts.
+## Usage
 
-Example of  curls that work with the server:
-curl --request GET http://localhost:8080/size
-curl --request GET http://localhost:8080/listings
-curl --request GET http://localhost:8080/listing/<id>
-curl --request DELETE http://localhost:8080/del/id
-curl --request DELETE http://localhost:8080/delall
-curl --request POST --data '<valid new listing json withoud id>' http://localhost:8080/new
-curl --request PUT --data '<valid json with a valid id>' http://localhost:8080/update
+```bash
+sbt run     # starts the server on port 8080
+sbt test    # unit tests
+./integrationTests.sh
+```
 
+`integrationTests.sh` starts the server with `sbt run`, exercises every endpoint with `curl`, checks the answers with `jq` and stops the server. Set `START_SERVER=no` to test an already running server (`BASE_URL` overrides `http://localhost:8080`).
 
-----------
+## REST API
 
+| Method | Path | Body | Reply |
+|--------|------|------|-------|
+| `POST` | `/new` | listing JSON **without** `id` | `{"newId": "<uuid>"}` |
+| `PUT` | `/update` | listing JSON **with** an existing `id` | empty 200 |
+| `GET` | `/listing/<id>` | | the listing JSON, 400 if not found |
+| `GET` | `/listings` | | JSON array of all listings |
+| `GET` | `/size` | | `{"size": N}` |
+| `DELETE` | `/del/<id>` | | the deleted listing, 400 if not found |
+| `DELETE` | `/delall` | | JSON array of the deleted listings (testing helper, dangerous!) |
 
-Choices
--------------
-I tried to *keep it simple* (KISS approach) and to try to use the same stack it is used at HomeAway. I have never worked with Finagle, so it took a bit of time to me to get used.
-As you can see from the *build.sbt* file the stack is really simple:
+A listing looks like [example.json](example.json) (`%NEWID%` is a placeholder for the id: `null` for a new listing):
 
- - Scala
- - Finagle as REST library (RPC)
- - Jackson for parsing json
- - scalatest for test
- - java for Synchronized Map
+```json
+{ "listing": { "id": null, "contact": {...}, "address": {...}, "location": {...} } }
+```
 
-Architecture
-------------------
+`id`, `contact`, `location` and the optional parts of `address` can be omitted. Unknown fields are ignored. Invalid requests (wrong path, a `POST` with an id, a `PUT` with an unknown id, ...) are answered with a 500 error, handled by `RestService`.
 
-The application is basically setting up a server with Finagle. I didn't need any specific filters for the  request because it was not required to have authentication or any other validation of the request (making this more RESTful).
-The request is handled by the **RestService** that check it and, based on the *method* of the request (GET, POST, PUT or DELETE), dispatch it to one specific **RequestHandler** (so we have four of them: **GetRequestHandler**, **DelRequestHandler**, **PostRequestHandler** and **PutRequestHandler**). One of the duties of the RestService is also to handle failures during the execution, especially the ones that are not caught by the speific handlers. **RestService** has no internal state (purely functional).
-Even the four **RequestHandler** have no internal state: they are basically like DAOs, they match on the request path and invoke the right method of the **DataStore**, and eventually they use the **JasonUtil** to convert from and to JSON (please note that I could have created a case object for errors in order to return error message as json...).
+```bash
+curl http://localhost:8080/size
+curl --request POST --data @newlisting.json http://localhost:8080/new
+curl --request DELETE http://localhost:8080/del/<id>
+```
 
-The state of the application is kept in the **DataStore**. I gave only one implementation of it, **SimpleMapStore**, based on a Synchronized Map. I wanted to try to give an implementation based on *finagle-redis*, but it was time-expensive.
+## Architecture
 
----------------
+`VacationRentals` (the `App`) serves a `RestService` with Finagle. `RestService` dispatches by HTTP method to one of four stateless `RequestHandler`s (`Get`, `Post`, `Put`, `Del`), which match on the path, call the `DataStore` and serialise the answer with `JsonUtil`. `RestService` also turns uncaught failures into 500 replies.
 
-Analysis of the solution
-===================
+```
+src/main/scala/name/lorenzani/andrea/homeaway
+├── VacationRentals.scala         entry point, port 8080
+├── services/                     RestService, RequestHandler (+ factories) and the four handlers
+├── datastore/                    DataStore trait, domain case classes, SimpleMapStore
+└── json/JsonUtil.scala           Jackson wrapper (toJson / fromJson / toMap)
+```
 
-In this chapter I want to try to give my point of view on the topic that were important for the test
+State lives only in the `DataStore`; the only implementation is `SimpleMapStore`, backed by a `ConcurrentHashMap`. Data is lost on restart.
 
-Concurrency
------------------
-I try to use the best functional principles for approaching the concurrency problem. Everything is purely functional and uses immutable objects, except the **DataStore**, that is unique per instance and synchronized. In the implementation I gave, only the *delAll* method is made by two requests: the first because I wanted to give back the list of elements we cleaned, the second is the clear itself. This means that if we receive a request in the middle, the data deleted could be different from the one returned by the REST service. I could have synchronized the method but I don't see an issue in that, also because the *delAll* was not required by the test and I would not leave it in a real scenario, too dangerous (I coded it only to help me with tests).
+## Design notes
 
-Reuse
---------
-All the relationships among objects are kept *abstract*, meaning that **RequestHandlers** are using **DataStores**, and not the implementation **SimpleMapStore**. Also **RestService** is using generic **RequestHandlers** for handling the requests. This means that the code is less coupled, more testable (easier to mock) and more reusable. The use of factories (**DataStore** object or **RequestHandler** object) makes it easy to change the implementation of the different behaviour without having to change the objects that use it (for example, I could implement a **DataStore** based on *redis* or a database, and it is enough to change the factory method to have the whole application use the new object).
-At an architectural level, the REST api could easily be used to store different type of data because some of its functions, like the ones related to creating or parsing JSON, have generic implementations. It is enough to create a different set of *case classes* to change the data stored by the component.
+- **Concurrency**: everything is immutable and stateless except the store, which is a concurrent map. `delAll` is the exception: it reads then clears, so a write in between is deleted but not returned. It is a testing helper and would not be shipped.
+- **Reuse**: handlers depend on the abstract `DataStore`, and the service on abstract `RequestHandler`s. Swapping in a Redis or SQL store means changing the factory method in `DataStore`/`RequestHandler`. Storing other data only needs different case classes.
+- **Performance and scalability**: Finagle does the heavy lifting; the store is the bottleneck. Instances are independent, so scaling out requires an external or partitioned store.
 
-Performance
-------------------
+## Notes on the upgrade
 
-The REST API relies on Finagle to the performance. The bottle neck is the synchronisation of the map. It is easy to substitute the **SimpleMapStore** with a store based on *Redis* or on a database, if needed. Using factories (like the **DataStore** object) it is easy to adapt the full application to different stores, with more complex behaviour and different capabilities.
+Previously Scala 2.11, Finagle 6.45, Jackson 2.8, ScalaTest 3.0 and sbt 0.13. Changes besides versions: Scala 2.13 collection converters, Jackson's `JsonMapper` builder with `ClassTagExtensions` instead of the removed `ScalaObjectMapper`, ScalaTest 3.2 `AnyFlatSpec`, simpler `Future.value`-based handlers, a more robust integration script, and forked `run`/`test` JVMs.
 
-Scalability
---------------
-The REST API is generic and reusable. You can replicate it in several instances and you will have only the problem of scaling the **DataStore**. If you use *redis* or a database, this is easily done. If you want to keep the in memory store you have to provide a scalable policy for the data: for example you can run several instances and keep on each of them a subset of the data. In this case the function *delAll* can become useful for scaling again: the router based on data can change its policy and simply request to clean one instance (this gives back the list of Listing contained before the clean), start more instances and then resubmit the Listings to the new instances with the new policy.
+## License
 
----------------------------------------------------------------------------
-
-Further readings
-==============
-
-I may write more information on the steps I had to follow to create my app in [a post on my blog](http://www.blog.andrea.lorenzani.name/?p=109&preview=true)
+Apache License 2.0, see [LICENSE](LICENSE).

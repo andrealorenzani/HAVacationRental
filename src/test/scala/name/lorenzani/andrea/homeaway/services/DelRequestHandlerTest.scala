@@ -20,12 +20,13 @@ package name.lorenzani.andrea.homeaway.services
 import com.twitter.finagle.http.{Method, Request, Status}
 import com.twitter.util.Await
 import name.lorenzani.andrea.homeaway.datastore._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.util.Try
 
 
-class DelRequestHandlerTest extends FlatSpec with Matchers {
+class DelRequestHandlerTest extends AnyFlatSpec with Matchers {
 
   private val ds = new SimpleMapStore
   val rh = new DelRequestHandler(ds)

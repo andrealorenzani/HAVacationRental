@@ -29,17 +29,11 @@ class PostRequestHandler(ds: DataStore) extends RequestHandler {
       case Root / "new" => putListing(request)
       case _ => throw new IllegalArgumentException("API request failure")
     }
-    Future {
-      val response = Response()
-      val content = JsonUtil.toJson(Map("newId" -> newid))
-      response.setContentString(content)
-      response
-    }
+    val response = Response()
+    response.setContentString(JsonUtil.toJson(Map("newId" -> newid)))
+    Future.value(response)
   }
 
-  def putListing(req: Request): String = {
-    val content = req.contentString
-    val listing = JsonUtil.fromJson[ListingWrapper](content)
-    ds.add(listing)
-  }
+  def putListing(req: Request): String =
+    ds.add(JsonUtil.fromJson[ListingWrapper](req.contentString))
 }

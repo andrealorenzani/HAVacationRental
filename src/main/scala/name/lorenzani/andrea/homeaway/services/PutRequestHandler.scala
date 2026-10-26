@@ -25,19 +25,13 @@ import name.lorenzani.andrea.homeaway.json.JsonUtil
 
 class PutRequestHandler(ds: DataStore) extends RequestHandler {
   override def handle(request: Request): Future[Response] = {
-    val newid = Path(request.path) match {
+    Path(request.path) match {
       case Root / "update" => putListing(request)
       case _ => throw new IllegalArgumentException("API request failure")
     }
-    Future {
-      val response = Response()
-      response
-    }
+    Future.value(Response())
   }
 
-  def putListing(req: Request): Unit = {
-    val content = req.contentString
-    val listing = JsonUtil.fromJson[ListingWrapper](content)
-    ds.update(listing)
-  }
+  def putListing(req: Request): Unit =
+    ds.update(JsonUtil.fromJson[ListingWrapper](req.contentString))
 }

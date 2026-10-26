@@ -32,17 +32,14 @@ class DelRequestHandler(ds: DataStore) extends RequestHandler {
       case Root / "del" / id => deleteListing(id)
       case _ => throw new IllegalArgumentException("API request failure")
     }
-    Future {
-      val response = Response()
-      rawMessage match {
-        case Success(msg) => response.setContentString (msg)
-        case Failure(e) => {
-          response.status = Status.BadRequest
-          response.setContentString("Not found")
-        }
-      }
-      response
+    val response = Response()
+    rawMessage match {
+      case Success(msg) => response.setContentString(msg)
+      case Failure(_) =>
+        response.status = Status.BadRequest
+        response.setContentString("Not found")
     }
+    Future.value(response)
   }
 
   def deleteListing(id: String): Try[String] = Try { JsonUtil.toJson(ds.del(id)) }

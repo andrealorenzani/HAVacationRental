@@ -21,11 +21,12 @@ import com.twitter.finagle.http._
 import com.twitter.util.Await
 import name.lorenzani.andrea.homeaway.datastore._
 import name.lorenzani.andrea.homeaway.json.JsonUtil
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.util.Try
 
-class GetRequestHandlerTest extends FlatSpec with Matchers {
+class GetRequestHandlerTest extends AnyFlatSpec with Matchers {
 
   private val ds = new SimpleMapStore
   private val listing = Listing(None, None, Address("addr", "post", None, None, None, "UK"), None)

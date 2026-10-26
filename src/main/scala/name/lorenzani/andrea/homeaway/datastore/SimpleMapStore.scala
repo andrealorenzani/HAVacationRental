@@ -20,18 +20,14 @@ package name.lorenzani.andrea.homeaway.datastore
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class SimpleMapStore extends DataStore{
   // I give a bit of breath to the amortized linear insert
   private val store = new ConcurrentHashMap[String, ListingWrapper](200)
 
   override def get(id: String): Option[ListingWrapper] = {
-    if(store.containsKey(id)){
-      Some(store.get(id))
-    } else {
-      None
-    }
+    Option(store.get(id))
   }
 
   override def add(newListing: ListingWrapper): String = {
@@ -45,7 +41,7 @@ class SimpleMapStore extends DataStore{
   override def update(newListing: ListingWrapper): Unit = {
     require(newListing.listing.id.isDefined, "The id of a listing cannot be empty. Maybe you want to use POST?")
     require(store.containsKey(newListing.listing.id.get), "The listing you are trying to update is not in the database")
-    store.put(newListing.listing.id.get, newListing).listing.id
+    store.put(newListing.listing.id.get, newListing)
   }
 
   override def del(listingId: String): ListingWrapper = {
@@ -60,7 +56,7 @@ class SimpleMapStore extends DataStore{
   }
 
   override def getAll: List[ListingWrapper] = {
-    store.entrySet().asScala.map(x => x.getValue).toList
+    store.values().asScala.toList
   }
 
   override def size: Int = store.size()

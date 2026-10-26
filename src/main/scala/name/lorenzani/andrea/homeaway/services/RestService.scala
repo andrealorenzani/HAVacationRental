@@ -40,7 +40,7 @@ class RestService (getHandler: RequestHandler,
         case Method.Post => postHandler.handle(request)
         case Method.Delete => delHandler.handle(request)
         case Method.Put => putHandler.handle(request)
-        case _ => Future value Response(Version.Http11, Status.NotFound)
+        case _ => Future.value(Response(Version.Http11, Status.NotFound))
       }
     }
     reply match {
@@ -49,7 +49,7 @@ class RestService (getHandler: RequestHandler,
         val message = Option(reason.getMessage) getOrElse "Something went wrong."
         logger.error(reason, message)
         val res = Response(Version.Http11, Status.InternalServerError)
-        res.setContentString(reason.getMessage)
+        res.setContentString(message)
         res
       }
     }

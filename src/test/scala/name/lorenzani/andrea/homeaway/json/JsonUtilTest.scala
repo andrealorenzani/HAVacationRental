@@ -18,10 +18,11 @@
 package name.lorenzani.andrea.homeaway.json
 
 import name.lorenzani.andrea.homeaway.datastore._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // No need of a Red Phase - I copied this class, I guess I have just to test it
-class JsonUtilTest extends FlatSpec with Matchers {
+class JsonUtilTest extends AnyFlatSpec with Matchers {
 
   "JsonUtil" should "convert maps into json and json into maps" in {
     val map = Map[String, String]("a" -> "b", "c" -> "d")
@@ -47,7 +48,7 @@ class JsonUtilTest extends FlatSpec with Matchers {
 
   it should "consider Optional values" in {
     val address = Address("street", "BR10NE", None, Some("City"), None, "UK")
-    var json = JsonUtil.toJson(address)
+    val json = JsonUtil.toJson(address)
     json should be ("{\"address\":\"street\",\"postalCode\":\"BR10NE\",\"countryCode\":null,\"city\":\"City\",\"state\":null,\"country\":\"UK\"}")
     val addressReconverted = JsonUtil.fromJson[Address](json)
     addressReconverted.address should be ("street")
@@ -59,7 +60,7 @@ class JsonUtilTest extends FlatSpec with Matchers {
   }
 
   it should "consider Optional values in input" in {
-    var json = "{\"address\":\"street\",\"postalCode\":\"BR10NE\",\"city\":\"City\",\"country\":\"UK\"}"
+    val json = "{\"address\":\"street\",\"postalCode\":\"BR10NE\",\"city\":\"City\",\"country\":\"UK\"}"
     val addressReconverted = JsonUtil.fromJson[Address](json)
     addressReconverted.address should be ("street")
     addressReconverted.postalCode should be ("BR10NE")
@@ -73,7 +74,7 @@ class JsonUtilTest extends FlatSpec with Matchers {
     val address = Address("street", "BR10NE", None, Some("City"), None, "UK")
     val listing = Listing(Some("myid"), None, address, None)
     val lwrap = ListingWrapper(listing)
-    var json = JsonUtil.toJson(lwrap)
+    val json = JsonUtil.toJson(lwrap)
     json should be ("{\"listing\":{\"id\":\"myid\",\"contact\":null,\"address\":{\"address\":\"street\",\"postalCode\":\"BR10NE\",\"countryCode\":null,\"city\":\"City\",\"state\":null,\"country\":\"UK\"},\"location\":null}}")
   }
 

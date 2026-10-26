@@ -17,13 +17,15 @@
 
 package name.lorenzani.andrea.homeaway.datastore
 
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class SimpleMapStoreTest extends FlatSpec with BeforeAndAfterEach with Matchers {
+class SimpleMapStoreTest extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
 
   var sms = new SimpleMapStore
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     sms = new SimpleMapStore
   }
 

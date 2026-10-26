@@ -32,20 +32,16 @@ class GetRequestHandler(ds: DataStore) extends RequestHandler {
       case Root / "size" => getSize
       case _ => throw new IllegalArgumentException("API request failure")
     }
-    Future {
-      val response = Response()
-      rawResult match {
-        case Success(res) => {
-          response.setContentTypeJson()
-          response.contentString = res
-        }
-        case Failure(ex) => {
-          response.status = Status.BadRequest
-          response.contentString = ex.getMessage
-        }
-      }
-      response
+    val response = Response()
+    rawResult match {
+      case Success(res) =>
+        response.setContentTypeJson()
+        response.contentString = res
+      case Failure(ex) =>
+        response.status = Status.BadRequest
+        response.contentString = ex.getMessage
     }
+    Future.value(response)
   }
 
   def showListingId(id: String): Try[String] = ds.get(id) match {
